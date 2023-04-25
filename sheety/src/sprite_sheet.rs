@@ -5,7 +5,7 @@ use crate::{
     sprite_cell::SpriteCell,
     unordered_sprite_sheet::UnorderedSpriteSheet,
     utils::IVec2,
-    Sprite,
+    Distribution, Sprite,
 };
 
 const PANIC_MSG_OUTOFBOUNDS: &str =
@@ -107,7 +107,7 @@ impl SpriteSheet {
         IterCellsMut::new(self)
     }
 
-    pub fn into_unordered(self) -> UnorderedSpriteSheet {
+    pub fn into_unordered(self) -> Result<UnorderedSpriteSheet> {
         UnorderedSpriteSheet::new(self.into_iter().filter_map(|item| item.sprite()).collect())
     }
 
@@ -134,11 +134,12 @@ impl SpriteSheet {
         Ok(())
     }
 
-    pub fn concat<'a, I>(sprite_iterator: I) -> Self
-    where
-        I: Iterator<Item = &'a Sprite>,
-    {
-        todo!();
+    pub fn from_unordered(sprites: UnorderedSpriteSheet, distribution: Distribution) -> Self {
+        let mut sheet = Self::new(distribution.get_min_size(sprites.len()), sprites.size());
+        sheet
+            .push_sprites(sprites)
+            .expect("Distribution::get_size should always return a size that fits");
+        sheet
     }
 }
 

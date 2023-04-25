@@ -19,7 +19,8 @@ fn push_several() {
         sussypiss_prime.clone(),
         sussypiss_prime.clone(),
         sussypiss_prime,
-    ]);
+    ])
+    .unwrap();
 
     match sheet.push_sprites(three_sussyphuses).unwrap_err() {
         Error::SheetFull { amount_fitted } => assert_eq!(amount_fitted, 2),
