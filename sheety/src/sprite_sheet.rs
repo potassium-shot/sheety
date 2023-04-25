@@ -13,6 +13,9 @@ const PANIC_MSG_OUTOFBOUNDS: &str =
 	if this panic occurs then the SpriteSheet.size is not in sync with the size of the inner \
 	SpriteSheet.cells vector";
 
+const PANIC_MSG_SHEET_FULL: &str =
+    "Distribution::get_min_size should always return a size that fits";
+
 pub struct SpriteSheet {
     cells: Vec<Vec<SpriteCell>>, // Vector of lines, each line is a vector of cells
     size: IVec2,
@@ -136,10 +139,42 @@ impl SpriteSheet {
 
     pub fn from_unordered(sprites: UnorderedSpriteSheet, distribution: Distribution) -> Self {
         let mut sheet = Self::new(distribution.get_min_size(sprites.len()), sprites.size());
+        sheet.push_sprites(sprites).expect(PANIC_MSG_SHEET_FULL);
         sheet
-            .push_sprites(sprites)
-            .expect("Distribution::get_size should always return a size that fits");
-        sheet
+    }
+
+    pub fn concat<I>(sprites: I, distribution: Distribution) -> Result<Self>
+    where
+        I: Iterator<Item = UnorderedSpriteSheet>,
+    {
+        let list: Vec<UnorderedSpriteSheet> = sprites.collect();
+
+        if list.len() == 0 {
+            return Err(Error::EmptyIterator);
+        }
+
+        let size = list[0].size();
+
+        let mut len = 0;
+
+        for unordered in list.iter() {
+            if unordered.size() != size {
+                return Err(Error::MismatchedSpriteSize {
+                    required: size,
+                    provided: unordered.size(),
+                });
+            }
+
+            len += unordered.len();
+        }
+
+        let mut sheet = Self::new(distribution.get_min_size(len), size);
+
+        for unordered in list {
+            sheet.push_sprites(unordered).expect(PANIC_MSG_SHEET_FULL);
+        }
+
+        Ok(sheet)
     }
 }
 

@@ -9,6 +9,7 @@ pub enum Error {
     OutOfRange { max: IVec2, provided: IVec2 },
     MismatchedSpriteSize { required: IVec2, provided: IVec2 },
     EmptyUnorderedSpriteSheet,
+    EmptyIterator,
     SheetFull { amount_fitted: u32 },
     ImageError(ImageError),
 }

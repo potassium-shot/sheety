@@ -7,7 +7,7 @@ Maybe even a GUI if I feel like it/have time for it.
 ## Todo:
 - [ ] API
 	- [ ] reordering of sprites
-	- [ ] sprite-sheet concatenation
+	- [x] sprite-sheet concatenation
 	- [x] sprite import
 	- [ ] sprite-sheet import
 	- [ ] individual sprites export
