@@ -1,6 +1,6 @@
-use std::vec;
+use std::{path::Path, vec};
 
-use image::{GenericImage, RgbaImage};
+use image::{GenericImage, GenericImageView, RgbaImage};
 
 use crate::{
     error::{Error, Result},
@@ -179,6 +179,44 @@ impl SpriteSheet {
         Ok(sheet)
     }
 
+    pub fn from_image_div(sprite: Sprite, divisions: IVec2) -> Self {
+        let cell_size = sprite.size() / divisions;
+
+        Self::from_image(sprite, divisions, cell_size)
+    }
+
+    pub fn from_image_cell_size(sprite: Sprite, cell_size: IVec2) -> Self {
+        let divisions = sprite.size() / cell_size;
+
+        Self::from_image(sprite, divisions, cell_size)
+    }
+
+    fn from_image(sprite: Sprite, divisions: IVec2, cell_size: IVec2) -> Self {
+        let image = sprite.into_image();
+
+        let mut sheet = Self::new(divisions, cell_size);
+
+        for x in 0..divisions.x {
+            for y in 0..divisions.y {
+                let sub_image = image.view(
+                    (x * cell_size.x) as u32,
+                    (y * cell_size.y) as u32,
+                    cell_size.x as u32,
+                    cell_size.y as u32,
+                );
+
+                sheet
+                    .set_cell(
+                        IVec2::new(x, y),
+                        SpriteCell::Sprite(sub_image.to_image().into()),
+                    )
+                    .expect(EXPECT_MSG_OUTOFBOUNDS);
+            }
+        }
+
+        sheet
+    }
+
     pub fn into_image(mut self) -> RgbaImage {
         let mut final_image = RgbaImage::new(
             (self.cell_size.x * self.size.x) as u32,
@@ -204,6 +242,29 @@ impl SpriteSheet {
         }
 
         final_image
+    }
+
+    pub fn load_div<P>(path: P, divisions: IVec2) -> Result<Self>
+    where
+        P: AsRef<Path>,
+    {
+        Ok(Self::from_image_div(Sprite::load(path)?, divisions))
+    }
+
+    pub fn load_cell_size<P>(path: P, cell_size: IVec2) -> Result<Self>
+    where
+        P: AsRef<Path>,
+    {
+        Ok(Self::from_image_cell_size(Sprite::load(path)?, cell_size))
+    }
+
+    pub fn save<P>(self, path: P) -> Result<()>
+    where
+        P: AsRef<Path>,
+    {
+        self.into_image()
+            .save(path)
+            .map_err(|err| Error::ImageError(err))
     }
 }
 

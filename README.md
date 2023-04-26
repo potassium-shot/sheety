@@ -6,11 +6,11 @@ Maybe even a GUI if I feel like it/have time for it.
 
 ## Todo:
 - [ ] API
-	- [ ] reordering of sprites
+	- [x] reordering of sprites
 	- [x] sprite-sheet concatenation
 	- [x] sprite import
-	- [ ] sprite-sheet import
-	- [ ] individual sprites export
+	- [x] sprite-sheet import
+	- [x] individual sprites export
 	- [x] sprite-sheet export
 	- [ ] documentation
 - [ ] CLI

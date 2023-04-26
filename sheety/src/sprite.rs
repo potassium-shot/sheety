@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use image::{DynamicImage, RgbaImage};
 
 use crate::{
@@ -11,7 +13,10 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    pub fn load(path: &str) -> Result<Sprite> {
+    pub fn load<P>(path: P) -> Result<Sprite>
+    where
+        P: AsRef<Path>,
+    {
         Ok(Self::from(
             image::open(path).map_err(|err| Error::ImageError(err))?,
         ))
@@ -31,5 +36,11 @@ impl From<DynamicImage> for Sprite {
         Self {
             image: val.into_rgba8(),
         }
+    }
+}
+
+impl From<RgbaImage> for Sprite {
+    fn from(val: RgbaImage) -> Self {
+        Self { image: val }
     }
 }
