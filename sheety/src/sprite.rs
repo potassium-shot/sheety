@@ -20,6 +20,10 @@ impl Sprite {
     pub fn size(&self) -> IVec2 {
         IVec2::new(self.image.width() as usize, self.image.height() as usize)
     }
+
+    pub fn into_image(self) -> RgbaImage {
+        self.image
+    }
 }
 
 impl From<DynamicImage> for Sprite {

@@ -1,9 +1,8 @@
 extern crate sheety;
 
-use sheety::{error::*, *};
+use sheety::*;
 
 fn main() {
-    let mut sheet = SpriteSheet::new(IVec2::new(2, 1), IVec2::new(256, 256));
     let sussypiss_prime = Sprite::load("sheety/tests/sussyphus-prime.jpeg").unwrap();
     let three_sussyphuses = UnorderedSpriteSheet::new(vec![
         sussypiss_prime.clone(),
@@ -12,8 +11,18 @@ fn main() {
     ])
     .unwrap();
 
-    match sheet.push_sprites(three_sussyphuses).unwrap_err() {
-        Error::SheetFull { amount_fitted } => assert_eq!(amount_fitted, 2),
-        other => panic!("expected Error::SheetFull, got {:?}", other),
-    }
+    let mario = Sprite::load("sheety/tests/mario-statue.png").unwrap();
+    let four_marios =
+        UnorderedSpriteSheet::new(vec![mario.clone(), mario.clone(), mario.clone(), mario])
+            .unwrap();
+
+    // packed with prio on columns
+    SpriteSheet::concat(
+        vec![three_sussyphuses, four_marios.clone()].into_iter(),
+        Distribution::Packed(false),
+    )
+    .unwrap()
+    .into_image()
+    .save("sheety/tests/result.png")
+    .unwrap();
 }

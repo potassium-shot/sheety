@@ -11,7 +11,7 @@ Maybe even a GUI if I feel like it/have time for it.
 	- [x] sprite import
 	- [ ] sprite-sheet import
 	- [ ] individual sprites export
-	- [ ] sprite-sheet export
+	- [x] sprite-sheet export
 	- [ ] documentation
 - [ ] CLI
 - [ ] publish on crates.io

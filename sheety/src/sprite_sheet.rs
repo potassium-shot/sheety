@@ -1,5 +1,7 @@
 use std::vec;
 
+use image::{GenericImage, RgbaImage};
+
 use crate::{
     error::{Error, Result},
     sprite_cell::SpriteCell,
@@ -8,12 +10,12 @@ use crate::{
     Distribution, Sprite,
 };
 
-const PANIC_MSG_OUTOFBOUNDS: &str =
+const EXPECT_MSG_OUTOFBOUNDS: &str =
     "coords have already been checked to be inbounds and should be inbounds by this point; \
 	if this panic occurs then the SpriteSheet.size is not in sync with the size of the inner \
 	SpriteSheet.cells vector";
 
-const PANIC_MSG_SHEET_FULL: &str =
+const EXPECT_MSG_SHEET_FULL: &str =
     "Distribution::get_min_size should always return a size that fits";
 
 pub struct SpriteSheet {
@@ -95,18 +97,18 @@ impl SpriteSheet {
         Ok(std::mem::replace(
             self.cells
                 .get_mut(coords.y)
-                .expect(PANIC_MSG_OUTOFBOUNDS)
+                .expect(EXPECT_MSG_OUTOFBOUNDS)
                 .get_mut(coords.x)
-                .expect(PANIC_MSG_OUTOFBOUNDS),
+                .expect(EXPECT_MSG_OUTOFBOUNDS),
             cell,
         ))
     }
 
-    pub fn iter_cells(&self) -> IterCells {
+    pub fn cells(&self) -> IterCells {
         IterCells::new(self)
     }
 
-    pub fn iter_cells_mut(&mut self) -> IterCellsMut {
+    pub fn cells_mut(&mut self) -> IterCellsMut {
         IterCellsMut::new(self)
     }
 
@@ -116,7 +118,7 @@ impl SpriteSheet {
 
     pub fn push_sprite(&mut self, sprite: Sprite) -> Result<()> {
         *(self
-            .iter_cells_mut()
+            .cells_mut()
             .find(|item| item.is_empty())
             .ok_or(Error::SheetFull { amount_fitted: 0 })?) = SpriteCell::Sprite(sprite);
 
@@ -139,7 +141,7 @@ impl SpriteSheet {
 
     pub fn from_unordered(sprites: UnorderedSpriteSheet, distribution: Distribution) -> Self {
         let mut sheet = Self::new(distribution.get_min_size(sprites.len()), sprites.size());
-        sheet.push_sprites(sprites).expect(PANIC_MSG_SHEET_FULL);
+        sheet.push_sprites(sprites).expect(EXPECT_MSG_SHEET_FULL);
         sheet
     }
 
@@ -171,10 +173,37 @@ impl SpriteSheet {
         let mut sheet = Self::new(distribution.get_min_size(len), size);
 
         for unordered in list {
-            sheet.push_sprites(unordered).expect(PANIC_MSG_SHEET_FULL);
+            sheet.push_sprites(unordered).expect(EXPECT_MSG_SHEET_FULL);
         }
 
         Ok(sheet)
+    }
+
+    pub fn into_image(mut self) -> RgbaImage {
+        let mut final_image = RgbaImage::new(
+            (self.cell_size.x * self.size.x) as u32,
+            (self.cell_size.y * self.size.y) as u32,
+        );
+
+        for x in 0..self.size.x {
+            for y in 0..self.size.y {
+                match std::mem::replace(
+                    self.cells[y].get_mut(x).expect(EXPECT_MSG_OUTOFBOUNDS),
+                    SpriteCell::Empty,
+                ) {
+                    SpriteCell::Sprite(sprite) => final_image
+                        .copy_from(
+                            &sprite.into_image(),
+                            (x * self.cell_size.x) as u32,
+                            (y * self.cell_size.y) as u32,
+                        )
+                        .expect("image should have already been checked to be of the right size at insertion time"),
+                    SpriteCell::Empty => (),
+                }
+            }
+        }
+
+        final_image
     }
 }
 
@@ -262,9 +291,9 @@ impl<'a> Iterator for IterCells<'a> {
             .sheet
             .cells
             .get(self.current_line)
-            .expect(PANIC_MSG_OUTOFBOUNDS)
+            .expect(EXPECT_MSG_OUTOFBOUNDS)
             .get(self.next_index)
-            .expect(PANIC_MSG_OUTOFBOUNDS);
+            .expect(EXPECT_MSG_OUTOFBOUNDS);
 
         self.next_index += 1;
         Some(next)
@@ -304,9 +333,9 @@ impl<'a> Iterator for IterCellsMut<'a> {
             .sheet
             .cells
             .get_mut(self.current_line)
-            .expect(PANIC_MSG_OUTOFBOUNDS)
+            .expect(EXPECT_MSG_OUTOFBOUNDS)
             .get_mut(self.next_index)
-            .expect(PANIC_MSG_OUTOFBOUNDS);
+            .expect(EXPECT_MSG_OUTOFBOUNDS);
 
         self.next_index += 1;
         Some(unsafe { std::mem::transmute(next) })
