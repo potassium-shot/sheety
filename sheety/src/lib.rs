@@ -1,6 +1,4 @@
-//! # This prison... To hold... Me ?
-
-// #![warn(missing_docs)]
+#![warn(missing_docs)]
 
 extern crate image;
 
