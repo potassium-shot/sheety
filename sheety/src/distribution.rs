@@ -19,12 +19,12 @@ impl Distribution {
                 *lines,
             ),
             Self::Packed(lines_prio) => {
-                let base = f32::sqrt(sprite_count as f32) + 0.5;
+                let base = f32::sqrt(sprite_count as f32);
 
                 if *lines_prio {
-                    IVec2::new(f32::ceil(base) as usize, f32::floor(base) as usize)
+                    IVec2::new(f32::ceil(base) as usize, f32::floor(base + 0.5) as usize)
                 } else {
-                    IVec2::new(f32::floor(base) as usize, f32::ceil(base) as usize)
+                    IVec2::new(f32::floor(base + 0.5) as usize, f32::ceil(base) as usize)
                 }
             }
         }
