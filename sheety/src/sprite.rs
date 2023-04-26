@@ -29,6 +29,12 @@ impl Sprite {
     pub fn into_image(self) -> RgbaImage {
         self.image
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.image
+            .pixels()
+            .all(|px| (px.0[0] & px.0[1] & px.0[2] & px.0[3]) == 0)
+    }
 }
 
 impl From<DynamicImage> for Sprite {

@@ -198,17 +198,24 @@ impl SpriteSheet {
 
         for x in 0..divisions.x {
             for y in 0..divisions.y {
-                let sub_image = image.view(
-                    (x * cell_size.x) as u32,
-                    (y * cell_size.y) as u32,
-                    cell_size.x as u32,
-                    cell_size.y as u32,
-                );
+                let sub_sprite: Sprite = image
+                    .view(
+                        (x * cell_size.x) as u32,
+                        (y * cell_size.y) as u32,
+                        cell_size.x as u32,
+                        cell_size.y as u32,
+                    )
+                    .to_image()
+                    .into();
 
                 sheet
                     .set_cell(
                         IVec2::new(x, y),
-                        SpriteCell::Sprite(sub_image.to_image().into()),
+                        if sub_sprite.is_empty() {
+                            SpriteCell::Empty
+                        } else {
+                            SpriteCell::Sprite(sub_sprite)
+                        },
                     )
                     .expect(EXPECT_MSG_OUTOFBOUNDS);
             }
