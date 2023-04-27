@@ -31,9 +31,7 @@ impl Sprite {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.image
-            .pixels()
-            .all(|px| (px.0[0] & px.0[1] & px.0[2] & px.0[3]) == 0)
+        self.image.pixels().all(|px| px.0[3] == 0)
     }
 }
 
