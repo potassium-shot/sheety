@@ -53,10 +53,14 @@ impl UnorderedSpriteSheet {
         Ok(Self { sprites, size })
     }
 
+    /// Gets the number of [Sprite]s in the [UnorderedSpriteSheet].
+    #[inline(always)]
     pub fn len(&self) -> usize {
         self.sprites.len()
     }
 
+    /// Gets the size of [Sprite] within the [UnorderedSpriteSheet].
+    #[inline(always)]
     pub fn size(&self) -> IVec2 {
         self.size
     }
