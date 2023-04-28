@@ -15,4 +15,3 @@ pub use sprite::Sprite;
 pub use sprite_cell::SpriteCell;
 pub use sprite_sheet::SpriteSheet;
 pub use unordered_sprite_sheet::UnorderedSpriteSheet;
-pub use utils::IVec2;

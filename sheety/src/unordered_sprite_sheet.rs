@@ -2,7 +2,8 @@ use std::vec;
 
 use crate::{
     error::{Error, Result},
-    IVec2, Sprite,
+    utils::IVec2,
+    Sprite,
 };
 
 /// An [UnorderedSpriteSheet] encapsulate a list of [Sprite]s. It can be optained from a [SpriteSheet][crate::SpriteSheet]
