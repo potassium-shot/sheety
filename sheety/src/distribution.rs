@@ -42,3 +42,9 @@ impl Distribution {
         }
     }
 }
+
+impl Default for Distribution {
+    fn default() -> Self {
+        Self::Packed(true)
+    }
+}
