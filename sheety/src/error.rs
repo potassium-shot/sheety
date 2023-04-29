@@ -1,6 +1,6 @@
 use image::ImageError;
 
-use crate::utils::IVec2;
+use crate::{utils::IVec2, UnorderedSpriteSheet};
 
 #[derive(Debug)]
 pub enum Error {
