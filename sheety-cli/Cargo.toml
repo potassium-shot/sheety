@@ -8,3 +8,7 @@ edition = "2021"
 [dependencies]
 
 sheety ={ path = "../sheety" }
+
+[[bin]]
+name = "sheety"
+path = "src/main.rs"
