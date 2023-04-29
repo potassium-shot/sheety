@@ -18,6 +18,7 @@ const EXPECT_MSG_OUTOFBOUNDS: &str =
 const EXPECT_MSG_SHEET_FULL: &str =
     "Distribution::get_min_size should always return a size that fits";
 
+/// An ordered sprite sheet. Contains a 2 dimensions array of [SpriteCell]s.
 pub struct SpriteSheet {
     cells: Vec<Vec<SpriteCell>>, // Vector of lines, each line is a vector of cells
     size: IVec2,
@@ -25,14 +26,25 @@ pub struct SpriteSheet {
 }
 
 impl SpriteSheet {
+    /// Makes a new, empty [SpriteSheet]. It will be filled with [SpriteCell::Empty] cells.
+    /// `size` is the size of the [SpriteSheet], in cells.
+    /// `cell_size` is the size of the [Sprite]s that will go into the [SpriteSheet].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let sheet = SpriteSheet::new((5, 5), (128, 128));
+    ///
+    /// assert!(sheet.cells().all(|cell| cell.is_empty()));
+    /// ```
     pub fn new(size: IVec2, cell_size: IVec2) -> SpriteSheet {
         SpriteSheet {
             cells: {
                 let mut temp_vec = Vec::new(); // vector of lines
-                temp_vec.reserve_exact(size.y);
+                temp_vec.reserve_exact(size.1);
 
-                for _ in 0..size.y {
-                    temp_vec.push(vec![SpriteCell::Empty; size.x]);
+                for _ in 0..size.1 {
+                    temp_vec.push(vec![SpriteCell::Empty; size.0]);
                 }
 
                 temp_vec
@@ -42,44 +54,61 @@ impl SpriteSheet {
         }
     }
 
+    /// Gets the size, in cells, of the [SpriteSheet].
     #[inline(always)]
     pub fn size(&self) -> IVec2 {
         self.size
     }
 
+    /// Returns an immutable reference to the cell at cell coordonates `coords`.
+    ///
+    /// # Errors
+    ///
+    /// - Will return [Error::OutOfRange] if the specified `coords` are out of bounds.
     pub fn get_cell(&self, coords: IVec2) -> Result<&SpriteCell> {
         Ok(self
             .cells
-            .get(coords.y)
-            .ok_or(Error::OutOfRange {
+            .get(coords.1)
+            .ok_or(Error::OutOfBounds {
                 max: self.size,
                 provided: coords,
             })?
-            .get(coords.x)
-            .ok_or(Error::OutOfRange {
+            .get(coords.0)
+            .ok_or(Error::OutOfBounds {
                 max: self.size,
                 provided: coords,
             })?)
     }
 
+    /// Returns a mutable reference to the cell at cell coordonates `coords`.
+    ///
+    /// # Errors
+    ///
+    /// - Will return [Error::OutOfRange] if the specified `coords` are out of bounds.
     pub fn get_cell_mut(&mut self, coords: IVec2) -> Result<&mut SpriteCell> {
         Ok(self
             .cells
-            .get_mut(coords.y)
-            .ok_or(Error::OutOfRange {
+            .get_mut(coords.1)
+            .ok_or(Error::OutOfBounds {
                 max: self.size,
                 provided: coords,
             })?
-            .get_mut(coords.x)
-            .ok_or(Error::OutOfRange {
+            .get_mut(coords.0)
+            .ok_or(Error::OutOfBounds {
                 max: self.size,
                 provided: coords,
             })?)
     }
 
+    /// Sets the value of the cell at coordonates `coords` to the specified `cell`, returning the previous value
+    /// of the cell at these coordonates.
+    ///
+    /// # Errors
+    ///
+    /// - Will return [Error::OutOfRange] if the specified `coords` are out of bounds.
     pub fn set_cell(&mut self, coords: IVec2, cell: SpriteCell) -> Result<SpriteCell> {
-        if coords.x > self.size.x || coords.y > self.size.y {
-            return Err(Error::OutOfRange {
+        if coords.0 > self.size.0 || coords.1 > self.size.1 {
+            return Err(Error::OutOfBounds {
                 max: self.size,
                 provided: coords,
             });
@@ -96,26 +125,37 @@ impl SpriteSheet {
 
         Ok(std::mem::replace(
             self.cells
-                .get_mut(coords.y)
+                .get_mut(coords.1)
                 .expect(EXPECT_MSG_OUTOFBOUNDS)
-                .get_mut(coords.x)
+                .get_mut(coords.0)
                 .expect(EXPECT_MSG_OUTOFBOUNDS),
             cell,
         ))
     }
 
+    /// Returns an immutable iterator of all cells contained in the [SpriteSheet].
+    /// Cells are iterated from top left, to max width, and then to max height.
     pub fn cells(&self) -> IterCells {
         IterCells::new(self)
     }
 
+    /// Returns a mutable iterator of all cells contained in the [SpriteSheet].
+    /// Cells are iterated from top left, to max width, and then to max height.
     pub fn cells_mut(&mut self) -> IterCellsMut {
         IterCellsMut::new(self)
     }
 
+    /// Consumes this [SpriteSheet] and makes an [UnorderedSpriteSheet] containing all the *non-empty* cells
+    /// from this [SpriteSheet], from the top left, to max width, and then to max height.
     pub fn into_unordered(self) -> Result<UnorderedSpriteSheet> {
         UnorderedSpriteSheet::new(self.into_iter().filter_map(|item| item.sprite()).collect())
     }
 
+    /// Puts a sprite in the first [SpriteCell::Empty] cell of the [SpriteSheet].
+    ///
+    /// # Errors
+    ///
+    /// - Will return [Error::SheetFull] if there is no [SpriteCell::Empty] left.
     pub fn push_sprite(&mut self, sprite: Sprite) -> Result<()> {
         *(self
             .cells_mut()
@@ -125,6 +165,13 @@ impl SpriteSheet {
         Ok(())
     }
 
+    /// Consumes an [UnorderedSpriteSheet], pushing all of its sprites into [SpriteCell::Empty] spaces of the
+    /// [SpriteSheet].
+    ///
+    /// # Errors
+    ///
+    /// - Will return [Error::SheetFull] if not all sprites were able to fit in the [SpriteSheet]. The ones that
+    /// did fit though, will still be pushed into the [SpriteSheet].
     pub fn push_sprites(&mut self, sprites: UnorderedSpriteSheet) -> Result<()> {
         let mut fitted = 0;
 
@@ -139,12 +186,20 @@ impl SpriteSheet {
         Ok(())
     }
 
+    /// Makes a new [SpriteSheet] from an [UnorderedSpriteSheet], following the specified [Distribution].
+    /// [Sprite]s are going to be placed from the top left, to max width, and then to max height.
     pub fn from_unordered(sprites: UnorderedSpriteSheet, distribution: Distribution) -> Self {
         let mut sheet = Self::new(distribution.get_min_size(sprites.len()), sprites.size());
         sheet.push_sprites(sprites).expect(EXPECT_MSG_SHEET_FULL);
         sheet
     }
 
+    /// Concatenates the [UnorderedSpriteSheet]s given in `sprites`, according to `distribution`.
+    ///
+    /// # Errors
+    ///
+    /// - Will return [Error::MismatchedSpriteSize] if all the [UnorderedSpriteSheet] don't
+    /// all have the same [Sprite] size.
     pub fn concat<I>(sprites: I, distribution: Distribution) -> Result<Self>
     where
         I: Iterator<Item = UnorderedSpriteSheet>,
@@ -179,14 +234,18 @@ impl SpriteSheet {
         Ok(sheet)
     }
 
+    /// Makes a [SpriteSheet] from a full [Sprite] that contains all the cells.
+    /// Divides the sheet according to the given number of divisions.
     pub fn from_image_div(sprite: Sprite, divisions: IVec2) -> Self {
-        let cell_size = sprite.size() / divisions;
+        let cell_size = (sprite.size().0 / divisions.0, sprite.size().1 / divisions.1);
 
         Self::from_image(sprite, divisions, cell_size)
     }
 
+    /// Makes a [SpriteSheet] from a full [Sprite] that contains all the cells.
+    /// Divides the sheet according to the cell size.
     pub fn from_image_cell_size(sprite: Sprite, cell_size: IVec2) -> Self {
-        let divisions = sprite.size() / cell_size;
+        let divisions = (sprite.size().0 / cell_size.0, sprite.size().1 / cell_size.1);
 
         Self::from_image(sprite, divisions, cell_size)
     }
@@ -196,21 +255,21 @@ impl SpriteSheet {
 
         let mut sheet = Self::new(divisions, cell_size);
 
-        for x in 0..divisions.x {
-            for y in 0..divisions.y {
+        for x in 0..divisions.0 {
+            for y in 0..divisions.1 {
                 let sub_sprite: Sprite = image
                     .view(
-                        (x * cell_size.x) as u32,
-                        (y * cell_size.y) as u32,
-                        cell_size.x as u32,
-                        cell_size.y as u32,
+                        (x * cell_size.0) as u32,
+                        (y * cell_size.1) as u32,
+                        cell_size.0 as u32,
+                        cell_size.1 as u32,
                     )
                     .to_image()
                     .into();
 
                 sheet
                     .set_cell(
-                        IVec2::new(x, y),
+                        (x, y),
                         if sub_sprite.is_empty() {
                             SpriteCell::Empty
                         } else {
@@ -224,14 +283,15 @@ impl SpriteSheet {
         sheet
     }
 
+    /// Consumes this [SpriteSheet], returning an [image::RgbaImage].
     pub fn into_image(mut self) -> RgbaImage {
         let mut final_image = RgbaImage::new(
-            (self.cell_size.x * self.size.x) as u32,
-            (self.cell_size.y * self.size.y) as u32,
+            (self.cell_size.0 * self.size.0) as u32,
+            (self.cell_size.1 * self.size.1) as u32,
         );
 
-        for x in 0..self.size.x {
-            for y in 0..self.size.y {
+        for x in 0..self.size.0 {
+            for y in 0..self.size.1 {
                 match std::mem::replace(
                     self.cells[y].get_mut(x).expect(EXPECT_MSG_OUTOFBOUNDS),
                     SpriteCell::Empty,
@@ -239,8 +299,8 @@ impl SpriteSheet {
                     SpriteCell::Sprite(sprite) => final_image
                         .copy_from(
                             &sprite.into_image(),
-                            (x * self.cell_size.x) as u32,
-                            (y * self.cell_size.y) as u32,
+                            (x * self.cell_size.0) as u32,
+                            (y * self.cell_size.1) as u32,
                         )
                         .expect("image should have already been checked to be of the right size at insertion time"),
                     SpriteCell::Empty => (),
@@ -251,6 +311,12 @@ impl SpriteSheet {
         final_image
     }
 
+    /// Loads a [SpriteSheet] from an image on the disk that contains all the cells.
+    /// Divides the sheet according to the given number of divisions.
+    ///
+    /// # Errors
+    ///
+    /// - Will return [Error::ImageError] if the underlying call to [image::open] returns an error.
     pub fn load_div<P>(path: P, divisions: IVec2) -> Result<Self>
     where
         P: AsRef<Path>,
@@ -258,6 +324,12 @@ impl SpriteSheet {
         Ok(Self::from_image_div(Sprite::load(path)?, divisions))
     }
 
+    /// Loads a [SpriteSheet] from an image on the disk that contains all the cells.
+    /// Divides the sheet according to the cell size.
+    ///
+    /// # Errors
+    ///
+    /// - Will return [Error::ImageError] if the underlying call to [image::open] returns an error.
     pub fn load_cell_size<P>(path: P, cell_size: IVec2) -> Result<Self>
     where
         P: AsRef<Path>,
@@ -265,6 +337,12 @@ impl SpriteSheet {
         Ok(Self::from_image_cell_size(Sprite::load(path)?, cell_size))
     }
 
+    /// Consumes and saves this [SpriteSheet] as an image to the disk.
+    /// Uses [image::RgbaImage::save], so the format will be guessed by the file extension.
+    ///
+    /// # Errors
+    ///
+    /// - Will return [Error::ImageError] if the underlying call to [image::open] returns an error.
     pub fn save<P>(self, path: P) -> Result<()>
     where
         P: AsRef<Path>,
@@ -346,11 +424,11 @@ impl<'a> Iterator for IterCells<'a> {
     type Item = &'a SpriteCell;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.next_index >= self.sheet.size.x {
+        if self.next_index >= self.sheet.size.0 {
             self.current_line += 1;
             self.next_index = 0;
 
-            if self.current_line >= self.sheet.size.y {
+            if self.current_line >= self.sheet.size.1 {
                 return None;
             }
         }
@@ -388,11 +466,11 @@ impl<'a> Iterator for IterCellsMut<'a> {
     type Item = &'a mut SpriteCell;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.next_index >= self.sheet.size.x {
+        if self.next_index >= self.sheet.size.0 {
             self.current_line += 1;
             self.next_index = 0;
 
-            if self.current_line >= self.sheet.size.y {
+            if self.current_line >= self.sheet.size.1 {
                 return None;
             }
         }
