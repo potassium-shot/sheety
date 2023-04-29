@@ -69,12 +69,12 @@ impl SpriteSheet {
         Ok(self
             .cells
             .get(coords.1)
-            .ok_or(Error::OutOfRange {
+            .ok_or(Error::OutOfBounds {
                 max: self.size,
                 provided: coords,
             })?
             .get(coords.0)
-            .ok_or(Error::OutOfRange {
+            .ok_or(Error::OutOfBounds {
                 max: self.size,
                 provided: coords,
             })?)
@@ -89,12 +89,12 @@ impl SpriteSheet {
         Ok(self
             .cells
             .get_mut(coords.1)
-            .ok_or(Error::OutOfRange {
+            .ok_or(Error::OutOfBounds {
                 max: self.size,
                 provided: coords,
             })?
             .get_mut(coords.0)
-            .ok_or(Error::OutOfRange {
+            .ok_or(Error::OutOfBounds {
                 max: self.size,
                 provided: coords,
             })?)
@@ -108,7 +108,7 @@ impl SpriteSheet {
     /// - Will return [Error::OutOfRange] if the specified `coords` are out of bounds.
     pub fn set_cell(&mut self, coords: IVec2, cell: SpriteCell) -> Result<SpriteCell> {
         if coords.0 > self.size.0 || coords.1 > self.size.1 {
-            return Err(Error::OutOfRange {
+            return Err(Error::OutOfBounds {
                 max: self.size,
                 provided: coords,
             });
