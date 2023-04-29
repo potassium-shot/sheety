@@ -1,5 +1,3 @@
-//! Error: My anus is dilated
-
 use image::ImageError;
 
 use crate::utils::IVec2;
