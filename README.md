@@ -5,14 +5,14 @@ It has a Rust library crate for its API and #todo a binary crate for a CLI app b
 Maybe even a GUI if I feel like it/have time for it.
 
 ## Todo:
-- [ ] API
+- [x] API
 	- [x] reordering of sprites
 	- [x] sprite-sheet concatenation
 	- [x] sprite import
 	- [x] sprite-sheet import
 	- [x] individual sprites export
 	- [x] sprite-sheet export
-	- [ ] documentation
+	- [x] documentation
 - [ ] CLI
 - [ ] publish on crates.io
 - [ ] GUI (maybe)
