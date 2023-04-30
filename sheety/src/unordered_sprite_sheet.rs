@@ -31,7 +31,7 @@ impl UnorderedSpriteSheet {
     ///
     /// let sprites = UnorderedSpriteSheet::new(vec![sprite_1, sprite_2]);
     ///
-    ///	assert_eq!(sprites.len(), 2);
+    /// assert_eq!(sprites.len(), 2);
     /// ```
     pub fn new(sprites: Vec<Sprite>) -> Result<Self> {
         let mut sprites_iter = sprites.iter();
@@ -57,6 +57,11 @@ impl UnorderedSpriteSheet {
     #[inline(always)]
     pub fn len(&self) -> usize {
         self.sprites.len()
+    }
+
+    /// Returns `true` if there are no [Sprite]s in the [UnorderedSpriteSheet].
+    pub fn is_empty(&self) -> bool {
+        self.sprites.is_empty()
     }
 
     /// Gets the size of [Sprite] within the [UnorderedSpriteSheet].

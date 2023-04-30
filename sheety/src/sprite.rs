@@ -24,9 +24,7 @@ impl Sprite {
     where
         P: AsRef<Path>,
     {
-        Ok(Self::from(
-            image::open(path).map_err(|err| Error::ImageError(err))?,
-        ))
+        Ok(Self::from(image::open(path).map_err(Error::ImageError)?))
     }
 
     /// Gets the size of the underlying [image::RgbaImage].

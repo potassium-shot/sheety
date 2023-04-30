@@ -66,8 +66,7 @@ impl SpriteSheet {
     ///
     /// - Will return [Error::OutOfRange] if the specified `coords` are out of bounds.
     pub fn get_cell(&self, coords: IVec2) -> Result<&SpriteCell> {
-        Ok(self
-            .cells
+        self.cells
             .get(coords.1)
             .ok_or(Error::OutOfBounds {
                 max: self.size,
@@ -77,7 +76,7 @@ impl SpriteSheet {
             .ok_or(Error::OutOfBounds {
                 max: self.size,
                 provided: coords,
-            })?)
+            })
     }
 
     /// Returns a mutable reference to the cell at cell coordonates `coords`.
@@ -86,8 +85,7 @@ impl SpriteSheet {
     ///
     /// - Will return [Error::OutOfRange] if the specified `coords` are out of bounds.
     pub fn get_cell_mut(&mut self, coords: IVec2) -> Result<&mut SpriteCell> {
-        Ok(self
-            .cells
+        self.cells
             .get_mut(coords.1)
             .ok_or(Error::OutOfBounds {
                 max: self.size,
@@ -97,7 +95,7 @@ impl SpriteSheet {
             .ok_or(Error::OutOfBounds {
                 max: self.size,
                 provided: coords,
-            })?)
+            })
     }
 
     /// Sets the value of the cell at coordonates `coords` to the specified `cell`, returning the previous value
@@ -173,14 +171,10 @@ impl SpriteSheet {
     /// - Will return [Error::SheetFull] if not all sprites were able to fit in the [SpriteSheet]. The ones that
     /// did fit though, will still be pushed into the [SpriteSheet].
     pub fn push_sprites(&mut self, sprites: UnorderedSpriteSheet) -> Result<()> {
-        let mut fitted = 0;
-
-        for sprite in sprites {
+        for (fitted, sprite) in sprites.into_iter().enumerate() {
             self.push_sprite(sprite).map_err(|_| Error::SheetFull {
-                amount_fitted: fitted,
+                amount_fitted: fitted as u32,
             })?;
-
-            fitted += 1;
         }
 
         Ok(())
@@ -206,7 +200,7 @@ impl SpriteSheet {
     {
         let list: Vec<UnorderedSpriteSheet> = sprites.collect();
 
-        if list.len() == 0 {
+        if list.is_empty() {
             return Err(Error::EmptyIterator);
         }
 
@@ -347,9 +341,7 @@ impl SpriteSheet {
     where
         P: AsRef<Path>,
     {
-        self.into_image()
-            .save(path)
-            .map_err(|err| Error::ImageError(err))
+        self.into_image().save(path).map_err(Error::ImageError)
     }
 }
 
@@ -387,18 +379,14 @@ impl Iterator for IntoIterCells {
         // take the next cell on the line (if none return none)
 
         if match self.line_iter {
-            Some(ref it) if it.len() == 0 => true, // is it empty
+            Some(ref it) if it.is_empty() => true, // is it empty
             None => true,                          // or is it None
             _ => false,
         } {
             self.line_iter = self.sheet_iter.next();
         }
 
-        if let Some(ref mut vec) = self.line_iter {
-            Some(vec.remove(0))
-        } else {
-            None
-        }
+        self.line_iter.as_mut().map(|vec| vec.remove(0))
     }
 }
 

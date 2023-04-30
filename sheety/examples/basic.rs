@@ -18,7 +18,7 @@ fn main() {
 
     // packed with prio on columns
     SpriteSheet::concat(
-        vec![three_sussyphuses, four_marios.clone()].into_iter(),
+        vec![three_sussyphuses, four_marios].into_iter(),
         Distribution::Packed(false),
     )
     .unwrap()
