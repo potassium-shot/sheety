@@ -29,17 +29,24 @@ struct Cli {
     #[command(subcommand)]
     command: Command,
 
+    /// The distribution can be `"columns <num>"`, `"lines <num>"`, or `"packed columns/lines"`
     #[arg(short = 'd', long = "distribution", global = true, default_value_t = String::from("packed columns"))]
     distribution: String,
 
+    /// The file to write the result into
     #[arg(short = 'o', long = "output", global = true, default_value_t = String::from("./sheety-result.png"))]
     output: String,
 }
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    /// Concatenate one or more sprite sheets or sprites together
     Cat(CatOptions),
+
+    /// Delete a sprite or a range of sprites from a sprite sheet
     Del(DelOptions),
+
+    /// Reverse a sprite sheet
     Rev(RevOptions),
 }
 
