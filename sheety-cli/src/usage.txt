@@ -1,50 +1,8 @@
-Usage:
-	sheety <command> [options]
+Examples:
+	sheety cat -i "sheety/tests/machete_idle.png" -s 256x256 -i "sheety/tests/machete_swing01.png" -s 256x256 -d "packed columns"
+	SAME AS
+	sheety cat -i "sheety/tests/machete_idle.png" -s 256 -i "sheety/tests/machete_swing01.png" -s 256 -d "packed columns"
+	SAME AS
+	sheety cat -S 256 -i "sheety/tests/machete_idle.png" -i "sheety/tests/machete_swing01.png" -d "packed columns"
 
-commands:
-	cat <file 1> <div 1> <file 2> <div 2> <file 3> <div 3> ...
-		Allows concatenating existing sprite sheets into a single. File order matters.
-		<div> specifies the division of the file (see div section of this help message)
-		May also be used with a single sprite sheet.
-	
-	del <file> <div> <index>
-	OR
-	del <file> <start index> <end index exclusive>
-		Removes the sprite of the sheet at <index>, or all sprites of the sheet between <start index> and <end index exclusive>.
-		See div section of this help message for help on <div>.
-	
-	get <file> <div> <index>
-		Gets a single sprite at <index> of sprite sheet <file>
-		See div section of this help message for help on <div>.
-	
-	slice <file> <div> <start index> <end index exclusive>
-		Gets an array of sprites from <start index> to <end index exclusive> of sprite sheet <file>
-		See div section of this help message for help on <div>.
-
-options:
-	-o <path>
-	--output <path>
-		Specifies path for the output. If this option is omitted, it defaults to './sheety-result.png'
-	
-	-d <distrib> <arg>
-	--distribution <distrib> <arg>
-	 	Sets the distribution rules to use when making a new sprite sheet.
-		
-		If <distrib> is columns, <arg> specifies the amount of columns enforced.
-		If <distrib> is lines, <arg> specifies the amount of lines enforced.
-		If <distrib> is packed, <arg> can be 'columns' or 'lines' to specifie which of the both should be favoritised.
-
-		Examples:
-			'--distribution columns 5' will force the resulting sprite sheet to have exactly 5 columns.
-			'--distribution packed lines' will force the resulting sprite sheet to be packed, favoritising line
-			length over column length.
-		
-		If this option is omitted, it defaults to 'packed columns'
-
-div:
-	A div is used to determine how to divide a sprite sheet.
-		'cells 30x40' divides it into 30 by 40 cells.
-		'sprite 30x40' divides it into individual sprites of 30 by 40 pixels.
-		'single' considers the whole image as a single sprite.
-
-		'cells 20' is equivalent to 'cells 20x20'
+	sheety cat -i "sheety/tests/machete_idle.png" -s 2-1 -i "sheety/tests/machete_swing01.png" -s 4-4 -d "columns 4"
