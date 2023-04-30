@@ -7,7 +7,7 @@ use std::{
     num::ParseIntError,
 };
 
-use sheety::{Distribution, SpriteSheet};
+use sheety::Distribution;
 
 static VERSION_MSG: &str = include_str!("version.txt");
 static USAGE_MSG: &str = include_str!("usage.txt");
@@ -28,15 +28,9 @@ fn main() {
 }
 
 fn read_command(mut args: Args, options: Options) -> Result<(), String> {
-    let _ = args.next();
-
     if let Some(cmd) = args.next() {
         match cmd.as_str() {
             "cat" => cat::command_cat(args, options),
-            dash if dash.starts_with('-') => {
-                println!("{}", VER_USAGE_MSG);
-                std::process::exit(0);
-            }
             unknown => Err(format!("Unknown command '{unknown}'.")),
         }
     } else {
@@ -126,24 +120,13 @@ enum Div {
     Single,
 }
 
-impl Div {
-    pub(crate) fn load(self, path: String) -> Result<SpriteSheet, String> {
-        match self {
-            Self::Cells(cell_size) => SpriteSheet::load_cell_size(path, cell_size),
-            Self::Sprite(div) => SpriteSheet::load_div(path, div),
-            Self::Single => SpriteSheet::load_div(path, (1, 1)),
-        }
-        .map_err(|err| format!("Could not load sprite/sprite sheet:\n"))
-    }
-}
-
 fn parse_file_div(args: &mut Args) -> Result<(String, Div), ParseFileDivError> {
     if let Some(arg) = args.next() {
         match arg.as_str() {
             dash if dash.starts_with('-') => Err(ParseFileDivError::NothingLeft),
             _path => Ok((
                 arg,
-                parse_div(args).map_err(|err| ParseFileDivError::ParseError(err))?,
+                parse_div(args).map_err(|err| ParseFileDivError::Parse(err))?,
             )),
         }
     } else {
@@ -152,7 +135,7 @@ fn parse_file_div(args: &mut Args) -> Result<(String, Div), ParseFileDivError> {
 }
 
 enum ParseFileDivError {
-    ParseError(String),
+    Parse(String),
     NothingLeft,
 }
 
