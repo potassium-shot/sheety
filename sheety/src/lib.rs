@@ -30,6 +30,7 @@
 #![warn(missing_docs)]
 
 extern crate image;
+extern crate thiserror;
 
 mod distribution;
 pub mod error;
