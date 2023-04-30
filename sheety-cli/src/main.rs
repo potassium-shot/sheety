@@ -7,12 +7,16 @@ extern crate clap;
 extern crate sheety;
 
 mod cat;
+mod del;
+mod rev;
 
-use std::path::PathBuf;
+use std::{ops::Range, path::PathBuf};
 
 use anyhow::{anyhow, bail, Context, Result};
 use cat::CatOptions;
 use clap::{Parser, Subcommand};
+use del::DelOptions;
+use rev::RevOptions;
 use sheety::{Distribution, SpriteSheet, UnorderedSpriteSheet};
 
 fn main() -> Result<()> {
@@ -35,6 +39,8 @@ struct Cli {
 #[derive(Debug, Subcommand)]
 enum Command {
     Cat(CatOptions),
+    Del(DelOptions),
+    Rev(RevOptions),
 }
 
 #[derive(Debug)]
@@ -44,13 +50,24 @@ enum ParsedCommand {
         dist: Distribution,
         output: PathBuf,
     },
+    Del {
+        indices: Range<usize>,
+        file: FileDiv,
+        dist: Distribution,
+        output: PathBuf,
+    },
+    Rev {
+        file: FileDiv,
+        dist: Distribution,
+        output: PathBuf,
+    },
 }
 
 impl ParsedCommand {
     fn parse(cli: Cli) -> Result<Self> {
         Ok(match cli.command {
             Command::Cat(options) => {
-                if options.sizes.is_empty() && options.default_size.is_empty() {
+                if options.sizes.is_empty() && !options.default_size.is_empty() {
                     // no sizes given and a default size given
                     Self::Cat {
                         files: options
@@ -84,6 +101,23 @@ impl ParsedCommand {
                     bail!("size count should be the same as the image count, or there should be a default size and nothing else");
                 }
             }
+            Command::Del(options) => Self::Del {
+                indices: parse_range(options.indices.as_str())?,
+                file: FileDiv {
+                    file_path: PathBuf::from(options.image),
+                    div: Div::parse(options.size.as_str())?,
+                },
+                dist: parse_distribution(cli.distribution.as_str())?,
+                output: PathBuf::from(cli.output),
+            },
+            Command::Rev(options) => Self::Rev {
+                file: FileDiv {
+                    file_path: PathBuf::from(options.image),
+                    div: Div::parse(options.size.as_str())?,
+                },
+                dist: parse_distribution(cli.distribution.as_str())?,
+                output: PathBuf::from(cli.output),
+            },
         })
     }
 
@@ -105,6 +139,49 @@ impl ParsedCommand {
 
                 SpriteSheet::concat(list?.into_iter(), dist)
                     .context("could not concatenate sprite sheets")?
+                    .save(output)
+                    .context("could not save file to disk")?;
+            }
+            Self::Del {
+                indices,
+                file,
+                dist,
+                output,
+            } => {
+                let mut sheet = file
+                    .load()
+                    .context("could not load sprite sheet")?
+                    .into_unordered()
+                    .context("could not get sprites from sprite sheet")?;
+
+                let init_len = sheet.len();
+
+                for i in indices.rev() {
+                    if i >= sheet.len() {
+                        bail!(
+                            "specified del index/range `{}` is out of bounds (max: `{}`)",
+                            i,
+                            init_len
+                        );
+                    }
+
+                    sheet.inner_mut().remove(i);
+                }
+
+                SpriteSheet::from_unordered(sheet, dist)
+                    .save(output)
+                    .context("could not save file to disk")?;
+            }
+            Self::Rev { file, dist, output } => {
+                let mut sheet = file
+                    .load()
+                    .context("could not load sprite sheet")?
+                    .into_unordered()
+                    .context("could not get sprites from sprite sheet")?;
+
+                sheet.inner_mut().reverse();
+
+                SpriteSheet::from_unordered(sheet, dist)
                     .save(output)
                     .context("could not save file to disk")?;
             }
@@ -191,5 +268,16 @@ impl Div {
             let size = txt.parse().context(PARSE_CONTEXT)?;
             Ok(Self::Sprite((size, size)))
         }
+    }
+}
+
+fn parse_range(txt: &str) -> Result<Range<usize>> {
+    const PARSE_CONTEXT: &str = "could not parse deletion range";
+
+    if let Some((min, max)) = txt.split_once('-') {
+        Ok(min.parse().context(PARSE_CONTEXT)?..max.parse().context(PARSE_CONTEXT)?)
+    } else {
+        let both = txt.parse().context(PARSE_CONTEXT)?;
+        Ok(both..both + 1)
     }
 }

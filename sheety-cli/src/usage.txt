@@ -6,3 +6,10 @@ Examples:
 	sheety cat -S 256 -i "sheety/tests/machete_idle.png" -i "sheety/tests/machete_swing01.png" -d "packed columns"
 
 	sheety cat -i "sheety/tests/machete_idle.png" -s 2-1 -i "sheety/tests/machete_swing01.png" -s 4-4 -d "columns 4"
+
+Commands:
+	cat to concatenate
+
+	del to delete one or more items
+
+	rev to reverse a sprite sheet

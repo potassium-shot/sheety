@@ -69,6 +69,23 @@ impl UnorderedSpriteSheet {
     pub fn size(&self) -> IVec2 {
         self.size
     }
+
+    /// Gets an immutable reference to the inner vector of sprites.
+    #[inline(always)]
+    pub fn inner(&self) -> &Vec<Sprite> {
+        &self.sprites
+    }
+
+    /// Gets a mutable reference to the inner vector of [Sprite]s.
+    #[inline(always)]
+    pub fn inner_mut(&mut self) -> &mut Vec<Sprite> {
+        &mut self.sprites
+    }
+
+    /// Consumes this [UnorderedSpriteSheet] and returns its underlying vector of [Sprite]s.
+    pub fn into_inner(self) -> Vec<Sprite> {
+        self.sprites
+    }
 }
 
 impl IntoIterator for UnorderedSpriteSheet {
