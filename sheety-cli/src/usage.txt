@@ -40,14 +40,6 @@ options:
 			length over column length.
 		
 		If this option is omitted, it defaults to 'packed columns'
-	
-	-h
-	--help
-		Display this help message and exit.
-	
-	-v
-	--version
-		Display the version number and exit.
 
 div:
 	A div is used to determine how to divide a sprite sheet.
