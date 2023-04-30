@@ -1,3 +1,8 @@
+#![warn(clippy::unwrap_used)]
+#![warn(clippy::expect_used)]
+#![warn(clippy::panic)]
+
+extern crate anyhow;
 extern crate clap;
 extern crate sheety;
 
@@ -5,12 +10,13 @@ mod cat;
 
 use std::path::PathBuf;
 
+use anyhow::{anyhow, bail, Context, Result};
 use cat::CatOptions;
 use clap::{Parser, Subcommand};
-use sheety::{Distribution, SpriteSheet};
+use sheety::{Distribution, SpriteSheet, UnorderedSpriteSheet};
 
-fn main() {
-    ParsedCommand::parse(Cli::parse()).execute();
+fn main() -> Result<()> {
+    ParsedCommand::parse(Cli::parse())?.execute()
 }
 
 #[derive(Debug, Parser)]
@@ -41,95 +47,101 @@ enum ParsedCommand {
 }
 
 impl ParsedCommand {
-    fn parse(cli: Cli) -> Self {
-        match cli.command {
+    fn parse(cli: Cli) -> Result<Self> {
+        Ok(match cli.command {
             Command::Cat(options) => {
-                if options.sizes.len() == 0 && options.default_size.len() > 0 {
+                if options.sizes.is_empty() && options.default_size.is_empty() {
                     // no sizes given and a default size given
                     Self::Cat {
                         files: options
                             .images
                             .into_iter()
-                            .map(|f| FileDiv {
-                                file_path: PathBuf::from(f),
-                                div: Div::parse(options.default_size.as_str()),
+                            .map(|f| {
+                                Ok(FileDiv {
+                                    file_path: PathBuf::from(f),
+                                    div: Div::parse(options.default_size.as_str())?,
+                                })
                             })
-                            .collect(),
-                        dist: parse_distribution(cli.distribution.as_str()),
+                            .collect::<Result<Vec<FileDiv>>>()?,
+                        dist: parse_distribution(cli.distribution.as_str())?,
                         output: PathBuf::from(cli.output),
                     }
                 } else if options.sizes.len() == options.images.len() {
                     // a size given for each sprite
                     Self::Cat {
                         files: std::iter::zip(options.images, options.sizes)
-                            .map(|(img, size)| FileDiv {
-                                file_path: PathBuf::from(img),
-                                div: Div::parse(size.as_str()),
+                            .map(|(img, size)| {
+                                Ok(FileDiv {
+                                    file_path: PathBuf::from(img),
+                                    div: Div::parse(size.as_str())?,
+                                })
                             })
-                            .collect(),
-                        dist: parse_distribution(cli.distribution.as_str()),
+                            .collect::<Result<Vec<FileDiv>>>()?,
+                        dist: parse_distribution(cli.distribution.as_str())?,
                         output: PathBuf::from(cli.output),
                     }
                 } else {
-                    panic!("size count should be the same as the image count, or there should be a default size and nothing else");
+                    bail!("size count should be the same as the image count, or there should be a default size and nothing else");
                 }
             }
-        }
+        })
     }
 
-    fn execute(self) {
+    fn execute(self) -> Result<()> {
         match self {
             Self::Cat {
                 files,
                 dist,
                 output,
             } => {
-                SpriteSheet::concat(
-                    files.into_iter().map(|f| {
-                        f.load()
+                let list: Result<Vec<UnorderedSpriteSheet>> = files
+                    .into_iter()
+                    .map(|f| {
+                        f.load()?
                             .into_unordered()
-                            .expect("could get sprites of sprite sheet:")
-                    }),
-                    dist,
-                )
-                .expect("could not concatenate:")
-                .save(output)
-                .expect("could not save file to disk:");
+                            .context("could get sprites of sprite sheet")
+                    })
+                    .collect();
+
+                SpriteSheet::concat(list?.into_iter(), dist)
+                    .context("could not concatenate sprite sheets")?
+                    .save(output)
+                    .context("could not save file to disk")?;
             }
         }
+
+        Ok(())
     }
 }
 
-fn parse_distribution(txt: &str) -> Distribution {
+fn parse_distribution(txt: &str) -> Result<Distribution> {
     let mut words = txt.split(' ');
 
-    match words
+    Ok(match words
         .next()
-        .expect("distribution should be either 'columns', 'lines' or 'packed'")
+        .ok_or(anyhow!("distribution should be either 'columns', 'lines' or 'packed'"))?
     {
         "columns" => Distribution::FixedColumns(
             words
                 .next()
-                .expect("distribution 'columns' expects a number of columns")
-                .parse()
-                .expect("could not parse distribution column count:"),
+                .ok_or(anyhow!("distribution 'columns' expects a number of columns"))?
+                .parse()?
         ),
         "lines" => Distribution::FixedLines(
             words
                 .next()
-                .expect("distribution 'lines' expects a number of lines")
-                .parse()
-                .expect("could not parse distribution line count:"),
+                .ok_or(anyhow!("distribution 'lines' expects a number of lines"))?
+                .parse()?
         ),
 		"packed" => Distribution::Packed(
-			match words.next().expect("distribution 'packed' expects a priority on 'columns' or 'lines'") {
+			match words.next().ok_or(anyhow!("distribution 'packed' expects a priority on 'columns' or 'lines'"))? {
 				"columns" => true,
 				"lines" => false,
-				unknown => panic!("distribution 'packed' expects a priority on 'columns' or 'lines', unknown priority '{unknown}'")
+				unknown => bail!("distribution 'packed' expects a priority on 'columns' or 'lines', unknown priority '{unknown}'")
 			}
 		),
-        unknown => panic!("unknown distribution '{unknown}'"),
-    }
+        unknown => bail!("unknown distribution '{unknown}'"),
+    })
 }
 
 #[derive(Debug)]
@@ -139,17 +151,16 @@ struct FileDiv {
 }
 
 impl FileDiv {
-    fn load(self) -> SpriteSheet {
-        match self.div {
+    fn load(self) -> Result<SpriteSheet> {
+        Ok(match self.div {
             Div::Cells(div) => {
-                SpriteSheet::load_div(self.file_path, div).expect("could not load sprite sheet:")
+                SpriteSheet::load_div(self.file_path, div).context("could not load sprite sheet")?
             }
             Div::Sprite(size) => SpriteSheet::load_cell_size(self.file_path, size)
-                .expect("could not load sprite sheet:"),
-            Div::Single => {
-                SpriteSheet::load_div(self.file_path, (1, 1)).expect("could not load sprite sheet:")
-            }
-        }
+                .context("could not load sprite sheet")?,
+            Div::Single => SpriteSheet::load_div(self.file_path, (1, 1))
+                .context("could not load sprite sheet")?,
+        })
     }
 }
 
@@ -161,24 +172,24 @@ enum Div {
 }
 
 impl Div {
-    fn parse(txt: &str) -> Self {
+    fn parse(txt: &str) -> Result<Self> {
+        const PARSE_CONTEXT: &str = "could not parse size";
+
         if txt == "single" {
-            Self::Single
+            Ok(Self::Single)
+        } else if let Some((x, y)) = txt.split_once('-') {
+            Ok(Self::Cells((
+                x.parse().context(PARSE_CONTEXT)?,
+                y.parse().context(PARSE_CONTEXT)?,
+            )))
+        } else if let Some((x, y)) = txt.split_once('x') {
+            Ok(Self::Sprite((
+                x.parse().context(PARSE_CONTEXT)?,
+                y.parse().context(PARSE_CONTEXT)?,
+            )))
         } else {
-            if let Some((x, y)) = txt.split_once('-') {
-                Self::Cells((
-                    x.parse().expect("could not parse size"),
-                    y.parse().expect("could not parse size"),
-                ))
-            } else if let Some((x, y)) = txt.split_once('x') {
-                Self::Sprite((
-                    x.parse().expect("could not parse size"),
-                    y.parse().expect("could not parse size"),
-                ))
-            } else {
-                let size = txt.parse().expect("could not parse size");
-                Self::Sprite((size, size))
-            }
+            let size = txt.parse().context(PARSE_CONTEXT)?;
+            Ok(Self::Sprite((size, size)))
         }
     }
 }
