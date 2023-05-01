@@ -14,7 +14,7 @@ categories = ["command-line-utilities", "game-development", "graphics", "multime
 
 [dependencies]
 
-sheety ={ path = "../sheety" }
+sheety = "0.1.0"
 clap = { version = "4.2.5", features = ["derive"]}
 anyhow = "1.0.71"
 
