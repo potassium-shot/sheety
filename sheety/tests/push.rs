@@ -3,7 +3,7 @@ use sheety::{error::Error, *};
 #[test]
 fn push_one() {
     let mut sheet = SpriteSheet::new((5, 5), (256, 256));
-    let sussypiss_prime = Sprite::load("tests/sussyphus-prime.jpeg").unwrap();
+    let sussypiss_prime = Sprite::load("examples/assets/sussyphus-prime.jpeg").unwrap();
     sheet.push_sprite(sussypiss_prime).unwrap();
 
     assert!(sheet.get_cell((0, 0)).unwrap().is_sprite());
@@ -14,7 +14,7 @@ fn push_one() {
 #[test]
 fn push_several() {
     let mut sheet = SpriteSheet::new((2, 1), (256, 256));
-    let sussypiss_prime = Sprite::load("tests/sussyphus-prime.jpeg").unwrap();
+    let sussypiss_prime = Sprite::load("examples/assets/sussyphus-prime.jpeg").unwrap();
     let three_sussyphuses = UnorderedSpriteSheet::new(vec![
         sussypiss_prime.clone(),
         sussypiss_prime.clone(),

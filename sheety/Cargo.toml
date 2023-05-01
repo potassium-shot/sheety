@@ -9,6 +9,7 @@ authors = ["potassium-shot"]
 readme = "./README.md"
 keywords = ["api", "graphics", "image", "gamedev", "utility"]
 categories = ["game-development", "graphics", "multimedia::images"]
+exclude = ["examples/assets/*"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

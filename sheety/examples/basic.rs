@@ -3,7 +3,7 @@ extern crate sheety;
 use sheety::*;
 
 fn main() {
-    let sussypiss_prime = Sprite::load("sheety/tests/sussyphus-prime.jpeg").unwrap();
+    let sussypiss_prime = Sprite::load("sheety/examples/assets/sussyphus-prime.jpeg").unwrap();
     let three_sussyphuses = UnorderedSpriteSheet::new(vec![
         sussypiss_prime.clone(),
         sussypiss_prime.clone(),
@@ -11,7 +11,7 @@ fn main() {
     ])
     .unwrap();
 
-    let mario = Sprite::load("sheety/tests/mario-statue.png").unwrap();
+    let mario = Sprite::load("sheety/examples/assets/mario-statue.png").unwrap();
     let four_marios =
         UnorderedSpriteSheet::new(vec![mario.clone(), mario.clone(), mario.clone(), mario])
             .unwrap();
@@ -23,6 +23,6 @@ fn main() {
     )
     .unwrap()
     .into_image()
-    .save("sheety/tests/result.png")
+    .save("sheety/examples/assets/result.png")
     .unwrap();
 }

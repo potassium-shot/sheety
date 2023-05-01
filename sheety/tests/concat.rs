@@ -2,7 +2,7 @@ use sheety::*;
 
 #[test]
 fn concat() {
-    let sussypiss_prime = Sprite::load("tests/sussyphus-prime.jpeg").unwrap();
+    let sussypiss_prime = Sprite::load("examples/assets/sussyphus-prime.jpeg").unwrap();
     let three_sussyphuses = UnorderedSpriteSheet::new(vec![
         sussypiss_prime.clone(),
         sussypiss_prime.clone(),
@@ -10,7 +10,7 @@ fn concat() {
     ])
     .unwrap();
 
-    let mario = Sprite::load("tests/mario-statue.png").unwrap();
+    let mario = Sprite::load("examples/assets/mario-statue.png").unwrap();
     let four_marios =
         UnorderedSpriteSheet::new(vec![mario.clone(), mario.clone(), mario.clone(), mario])
             .unwrap();
