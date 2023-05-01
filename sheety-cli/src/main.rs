@@ -9,6 +9,7 @@ extern crate sheety;
 mod cat;
 mod del;
 mod rev;
+mod slc;
 
 use std::{ops::Range, path::PathBuf};
 
@@ -18,6 +19,7 @@ use clap::{Parser, Subcommand};
 use del::DelOptions;
 use rev::RevOptions;
 use sheety::{Distribution, SpriteSheet, UnorderedSpriteSheet};
+use slc::SlcOptions;
 
 fn main() -> Result<()> {
     ParsedCommand::parse(Cli::parse())?.execute()
@@ -46,6 +48,9 @@ enum Command {
     /// Delete a sprite or a range of sprites from a sprite sheet
     Del(DelOptions),
 
+    /// Slice and keep a sprite or a range of sprites from a sprite sheet
+    Slc(SlcOptions),
+
     /// Reverse a sprite sheet
     Rev(RevOptions),
 }
@@ -58,6 +63,12 @@ enum ParsedCommand {
         output: PathBuf,
     },
     Del {
+        indices: Range<usize>,
+        file: FileDiv,
+        dist: Distribution,
+        output: PathBuf,
+    },
+    Slc {
         indices: Range<usize>,
         file: FileDiv,
         dist: Distribution,
@@ -117,6 +128,15 @@ impl ParsedCommand {
                 dist: parse_distribution(cli.distribution.as_str())?,
                 output: PathBuf::from(cli.output),
             },
+            Command::Slc(options) => Self::Slc {
+                indices: parse_range(options.indices.as_str())?,
+                file: FileDiv {
+                    file_path: PathBuf::from(options.image),
+                    div: Div::parse(options.size.as_str())?,
+                },
+                dist: parse_distribution(cli.distribution.as_str())?,
+                output: PathBuf::from(cli.output),
+            },
             Command::Rev(options) => Self::Rev {
                 file: FileDiv {
                     file_path: PathBuf::from(options.image),
@@ -161,17 +181,43 @@ impl ParsedCommand {
                     .into_unordered()
                     .context("could not get sprites from sprite sheet")?;
 
-                let init_len = sheet.len();
+                let len = sheet.len();
 
                 for i in indices.rev() {
                     if i >= sheet.len() {
-                        bail!(
-                            "specified del index/range `{}` is out of bounds (max: `{}`)",
-                            i,
-                            init_len
-                        );
+                        bail!("specified del index/range `{i}` is out of bounds (max: `{len}`)",);
                     }
 
+                    sheet.inner_mut().remove(i);
+                }
+
+                SpriteSheet::from_unordered(sheet, dist)
+                    .save(output)
+                    .context("could not save file to disk")?;
+            }
+            Self::Slc {
+                indices,
+                file,
+                dist,
+                output,
+            } => {
+                let mut sheet = file
+                    .load()
+                    .context("could not load sprite sheet")?
+                    .into_unordered()
+                    .context("could not get sprites from sprite sheet")?;
+
+                let len = sheet.len();
+
+                for i in (indices.end..len).rev() {
+                    if i >= sheet.len() {
+                        bail!("specified slc index/range `{i}` is out of bounds (max: `{len}`)");
+                    }
+
+                    sheet.inner_mut().remove(i);
+                }
+
+                for i in (0..indices.start).rev() {
                     sheet.inner_mut().remove(i);
                 }
 
