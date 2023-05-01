@@ -1,8 +1,14 @@
 [package]
 name = "sheety-cli"
+description = "sheety is a sprite-sheet manipulation program written in Rust."
+repository = "https://github.com/potassium-shot/sheety"
+license = "MIT"
 version = "0.1.0"
 edition = "2021"
 authors = ["potassium-shot"]
+readme = "./README.md"
+keywords = ["cli", "graphics", "image", "gamedev", "utility"]
+categories = ["command-line-utilities", "game-development", "graphics", "multimedia::images"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

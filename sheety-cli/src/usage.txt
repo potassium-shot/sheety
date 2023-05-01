@@ -10,6 +10,8 @@ Examples:
 Commands:
 	cat to concatenate
 
+	slc to slice and keep one or more items
+ 
 	del to delete one or more items
 
 	rev to reverse a sprite sheet
