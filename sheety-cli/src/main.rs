@@ -63,13 +63,13 @@ enum ParsedCommand {
         output: PathBuf,
     },
     Del {
-        indices: Range<usize>,
+        indices: UnboundRange,
         file: FileDiv,
         dist: Distribution,
         output: PathBuf,
     },
     Slc {
-        indices: Range<usize>,
+        indices: UnboundRange,
         file: FileDiv,
         dist: Distribution,
         output: PathBuf,
@@ -120,7 +120,7 @@ impl ParsedCommand {
                 }
             }
             Command::Del(options) => Self::Del {
-                indices: parse_range(options.indices.as_str())?,
+                indices: UnboundRange::parse(options.indices.as_str())?,
                 file: FileDiv {
                     file_path: PathBuf::from(options.image),
                     div: Div::parse(options.size.as_str())?,
@@ -129,7 +129,7 @@ impl ParsedCommand {
                 output: PathBuf::from(cli.output),
             },
             Command::Slc(options) => Self::Slc {
-                indices: parse_range(options.indices.as_str())?,
+                indices: UnboundRange::parse(options.indices.as_str())?,
                 file: FileDiv {
                     file_path: PathBuf::from(options.image),
                     div: Div::parse(options.size.as_str())?,
@@ -183,7 +183,7 @@ impl ParsedCommand {
 
                 let len = sheet.len();
 
-                for i in indices.rev() {
+                for i in indices.into_range(len).rev() {
                     if i >= sheet.len() {
                         bail!("specified del index/range `{i}` is out of bounds (max: `{len}`)",);
                     }
@@ -208,6 +208,8 @@ impl ParsedCommand {
                     .context("could not get sprites from sprite sheet")?;
 
                 let len = sheet.len();
+
+                let indices = indices.into_range(len);
 
                 for i in (indices.end..len).rev() {
                     if i >= sheet.len() {
@@ -324,13 +326,39 @@ impl Div {
     }
 }
 
-fn parse_range(txt: &str) -> Result<Range<usize>> {
-    const PARSE_CONTEXT: &str = "could not parse deletion range";
+#[derive(Debug)]
+struct UnboundRange {
+    start: usize,
+    end: Option<usize>,
+}
 
-    if let Some((min, max)) = txt.split_once('-') {
-        Ok(min.parse().context(PARSE_CONTEXT)?..max.parse().context(PARSE_CONTEXT)?)
-    } else {
-        let both = txt.parse().context(PARSE_CONTEXT)?;
-        Ok(both..both + 1)
+impl UnboundRange {
+    fn parse(txt: &str) -> Result<Self> {
+        const PARSE_CONTEXT: &str = "could not parse deletion range";
+
+        if let Some((min, max)) = txt.split_once('-') {
+            Ok(Self {
+                start: if min.is_empty() {
+                    0
+                } else {
+                    min.parse().context(PARSE_CONTEXT)?
+                },
+                end: if max.is_empty() {
+                    None
+                } else {
+                    Some(max.parse().context(PARSE_CONTEXT)?)
+                },
+            })
+        } else {
+            let both = txt.parse().context(PARSE_CONTEXT)?;
+            Ok(Self {
+                start: both,
+                end: Some(both + 1),
+            })
+        }
+    }
+
+    fn into_range(self, upper_bound: usize) -> Range<usize> {
+        self.start..self.end.unwrap_or(upper_bound)
     }
 }
